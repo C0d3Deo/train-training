@@ -1,10 +1,12 @@
   // Initialize Firebase
+  $("th").addClass("text-center");
+  
   var config = {
     apiKey: "AIzaSyA32c64d5-e5A23sjM2jrJkEIzeYW-HkNo",
     authDomain: "dol-train-depo.firebaseapp.com",
     databaseURL: "https://dol-train-depo.firebaseio.com",
-    storageBucket: "",
-    messagingSenderId: "605597879599"
+    storageBucket: "dol-train-depo.appspot.com",
+    // messagingSenderId: "605597879599"
   };
   firebase.initializeApp(config);
 
@@ -23,20 +25,50 @@ $("#submit").on("click", function(event){
 	train = $("#trainInput").val().trim();
 	destination = $("#destinationInput").val().trim();
 	depart = $("#departInput").val().trim();
-	run = $("#runInput").val().trim();
+	console.log("departure is "+depart);
+	run = moment($("#runInput").val().trim(), "mm").format("mm");
+	
 
-	database.ref().push({
+
+	database.ref().child("train_data").push({
 		train : train,
 		destination : destination,
 		depart : depart,
 		run : run
 	});
 	// $("form").trigger("reset");
-	// return false;
 });
 
-console.log(database.ref());
-database.ref().on("child_added", function(){
+database.ref("train_data").on("child_added", function(childSnapshot){
+	var currenTime = moment();
+	console.log("curent time=",moment(currenTime).format("hh:mm"));
+	var deparTime = moment(childSnapshot.val().depart, "hh:mm").subtract(1, "year");
+	var runTime = parseInt(childSnapshot.val().run);
+	console.log($.type(currenTime)
+			+"\n"+$.type(deparTime),moment(deparTime).format("HH:mm")
+			+"\n"+runTime);
+
+	var timeDiff = moment().diff(moment(deparTime),"minutes");
+	console.log("diff is "+timeDiff);
+
+	var diffRemains = timeDiff % runTime;
+	console.log("Here lies "+diffRemains);
+
+	var timeAway = runTime - diffRemains;
+	console.log("away "+ timeAway);	
+	var nexTrain = moment().add(timeAway, "minutes");
+	console.log(nexTrain);
+
+
 	$("#trainDepo").append("<tr>");
-	$("#trainDepo").append("<td>"+database.ref().train.val());
-})
+	$("#trainDepo").append("<td>"+childSnapshot.val().train);
+	$("#trainDepo").append("<td>"+childSnapshot.val().destination);
+	$("#trainDepo").append("<td>"+childSnapshot.val().run);
+	$("#trainDepo").append("<td>"+moment(deparTime).format("HH:mm"));
+	$("#trainDepo").append("<td>"+moment(nexTrain).format("HH:mm"));
+	$("#trainDepo").append("<td>"+timeAway);
+	$("td").addClass("text-center");
+
+
+});
+
